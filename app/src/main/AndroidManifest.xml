@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hsf1002.sky.electriccard">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!--uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /-->
+
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+
+    <application
+        android:name=".application.EletricCardApp"
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        >
+        <activity android:name=".activity.ElectricCardActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 监听开机广播, SIM卡网络状态变化 -->
+        <receiver android:name=".receiver.ElectricCardReceiver">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <!--action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
+                <action android:name="android.net.wifi.STATE_CHANGE" /-->
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- sticky服务, 定时读取持续和累计网络连接时间,判断是否需要激活 -->
+        <service android:name=".service.ElectricCardService" />
+
+    </application>
+
+</manifest>
