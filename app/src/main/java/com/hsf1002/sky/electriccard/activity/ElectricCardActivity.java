@@ -2,17 +2,16 @@ package com.hsf1002.sky.electriccard.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.hsf1002.sky.electriccard.R;
-import com.hsf1002.sky.electriccard.service.ElectricCardService;
-import com.hsf1002.sky.electriccard.utils.NVutils;
 
-import static com.hsf1002.sky.electriccard.utils.Constant.IS_ELECTRIC_CARD_ACTIVATED;
-import static com.hsf1002.sky.electriccard.utils.NVutils.getSimcardActivated;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardActivated;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardDateTime;
 
 public class ElectricCardActivity extends Activity {
-
+    private static final String TAG = "ElectricCardActivity";
     private TextView textView;
 
     @Override
@@ -35,13 +34,14 @@ public class ElectricCardActivity extends Activity {
         String second = "**";
         String electricStr = getString(R.string.activate_message, year, month, day, hour, minute, second);
 
-        if (getSimcardActivated())
+        if (readSimcardActivated())
         {
-            textView.setText(electricStr);
+            Log.d(TAG, "setTextViev: simcard activated");
+            electricStr = readSimcardDateTime();
         }
-        else
-        {
-            textView.setText(electricStr);
-        }
+
+        Log.d(TAG, "setTextViev: electricStr = " + electricStr);
+
+        textView.setText(electricStr);
     }
 }

@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
  * Created by hefeng on 18-7-18.
  */
 
+@Deprecated
 public class SmsObserver extends ContentObserver{
 
     private Uri SMS_INBOX = Uri.parse("content://sms/");

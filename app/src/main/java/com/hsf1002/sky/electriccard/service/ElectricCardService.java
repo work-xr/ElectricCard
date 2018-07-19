@@ -6,19 +6,29 @@ import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.IBinder;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import com.hsf1002.sky.electriccard.utils.NVutils;
+import com.hsf1002.sky.electriccard.entity.ProviderInfo;
+import com.hsf1002.sky.electriccard.receiver.ElectricCardReceiver;
+import com.hsf1002.sky.electriccard.utils.NVUtils;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_NAME;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_TELECOM_NAME;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_NAME;
 import static com.hsf1002.sky.electriccard.utils.Constant.SERVICE_STARTUP_INTERVAL;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.readNetworkConnectedTime;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.readProviderInfo;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardActivated;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.updateDurationFromService;
+import static com.hsf1002.sky.electriccard.utils.NVUtils.writeNetworkConnectedTime;
+import static com.hsf1002.sky.electriccard.utils.ProviderUtils.setOperatorInfo;
 
 /**
  * Created by hefeng on 18-7-17.
@@ -27,6 +37,21 @@ import static com.hsf1002.sky.electriccard.utils.Constant.SERVICE_STARTUP_INTERV
 public class ElectricCardService extends Service {
     private static final String TAG = "ElectricCardService";
     private static int startServiceInterval = SERVICE_STARTUP_INTERVAL;
+
+    private ElectricCardReceiver electricCardReceiver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        Log.d(TAG, "onCreate: ");
+
+        electricCardReceiver = new ElectricCardReceiver();
+        IntentFilter filter = new IntentFilter();
+
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(electricCardReceiver, filter);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -47,16 +72,81 @@ public class ElectricCardService extends Service {
 
             if (type == ConnectivityManager.TYPE_MOBILE) {
                 Log.d(TAG, "readSimCardOnlineDuration: TYPE_MOBILE");
+                boolean isOperatorSetted = readProviderInfo();
+                long connectedStartTime = readNetworkConnectedTime();
 
-                NVutils.updateDurationFromService();
+                if (!isOperatorSetted)
+                {
+                    setOperatorInfo();
+                }
+
+                if (connectedStartTime == 0)
+                {
+                    writeNetworkConnectedTime(System.currentTimeMillis());
+                }
+
+                /* readSimcardActivated must be call again*/
+                if (!readSimcardActivated())
+                {
+                    updateDurationFromService();
+                }
             }
         }
 
-        if (NVutils.getSimcardActivated())
+        /* 如果已经置激活标志位, 则开始读取短信内容 */
+        if (readSimcardActivated())
         {
             Log.d(TAG, "readSimCardOnlineDuration: SimcardActivated.............");
 
             getSmsFromPhone();
+        }
+    }
+
+    private void getSmsFromPhone() {
+        //ContentResolver cr = getContentResolver();
+        //Uri SMS_INBOX = Uri.parse("content://sms/");
+        //String[] projection = new String[]{"body"};//"_id", "address", "person",, "date", "type
+        //String where = "date >  " + (System.currentTimeMillis() - 1 * 1 * 60 * 60 * 1000);     // 查询最近一小时的信息
+        Cursor cursor = null;// //cr.query(SMS_INBOX, projection, where, null, "date desc");
+
+        try {
+            cursor = getContentResolver().query(
+                    Uri.parse("content://sms"),
+                    new String[]{"_id", "address", "body", "date"},
+                    null, null, "date desc");
+            if (cursor != null) {
+                String address;
+                String body;
+                String date;
+                while (cursor.moveToNext()) {
+                    address = cursor.getString(cursor.getColumnIndex("address"));// 在这里获取短信信息
+                    body = cursor.getString(cursor.getColumnIndex("body"));// 在这里获取短信信息
+                    date = cursor.getString(cursor.getColumnIndex("date"));// 在这里获取短信信息
+
+                    Log.d(TAG, "getSmsFromPhone: address = " + address);
+                    Log.d(TAG, "getSmsFromPhone: body = " + body);
+                    Log.d(TAG, "getSmsFromPhone: date = " + date);
+                    //-----------------写自己的逻辑
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            Log.d(TAG, "getSmsFromPhone: cursor = null");
+            e.printStackTrace();
+        }
+        finally
+        {
+            if (cursor != null)
+            {
+                cursor.close();
+            }
+        }
+
+
+        if (true)
+        {
+            // write data-time to NV
         }
     }
 
@@ -71,6 +161,7 @@ public class ElectricCardService extends Service {
         PendingIntent pi = PendingIntent.getService(context, 0, intent, 0);
 
         AlarmManager manager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+        Log.d(TAG, "setServiceAlarm: isOn = " + isOn);
 
         if  (isOn)
         {
@@ -91,37 +182,15 @@ public class ElectricCardService extends Service {
         return pi != null;
     }
 
-    public void stopGpsService()
+    public void stopService()
     {
         stopSelf();
     }
 
-    private void getSmsFromPhone() {
-        ContentResolver cr = getContentResolver();
-        Uri SMS_INBOX = Uri.parse("content://sms/");
-        String[] projection = new String[]{"body"};//"_id", "address", "person",, "date", "type
-        String where = " address = '1066321332' AND date >  " + (System.currentTimeMillis() - 10 * 60 * 1000);
-        Cursor cur = cr.query(SMS_INBOX, projection, where, null, "date desc");
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(electricCardReceiver);
 
-        if (null == cur) {
-            return;
-        }
-
-        if (cur.moveToNext()) {
-            String number = cur.getString(cur.getColumnIndex("address"));//手机号
-            String name = cur.getString(cur.getColumnIndex("person"));//联系人姓名列表
-            String body = cur.getString(cur.getColumnIndex("body"));
-            //这里我是要获取自己短信服务号码中的验证码~~
-            Pattern pattern = Pattern.compile(" [a-zA-Z0-9]{10}");
-            Matcher matcher = pattern.matcher(body);
-            if (matcher.find()) {
-                String res = matcher.group().substring(1, 11);
-            }
-        }
-
-        if (true)
-        {
-            // write data-time to NV
-        }
+        super.onDestroy();
     }
 }

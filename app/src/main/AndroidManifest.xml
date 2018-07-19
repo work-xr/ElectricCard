@@ -3,6 +3,7 @@
     package="com.hsf1002.sky.electriccard">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
@@ -15,7 +16,7 @@
 
 
     <application
-        android:name=".application.EletricCardApp"
+        android:name=".application.ElectricCardApp"
         android:allowBackup="true"
         android:label="@string/app_name"
         >
@@ -27,9 +28,16 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".activity.ClearActivity"
+            android:theme="@android:style/Theme.Dialog">
+
+        </activity>
+
         <!-- 监听开机广播, SIM卡网络状态变化 -->
         <receiver android:name=".receiver.ElectricCardReceiver">
             <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
                 <!--action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
                 <action android:name="android.net.wifi.STATE_CHANGE" /-->
