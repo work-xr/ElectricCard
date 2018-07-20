@@ -3,8 +3,12 @@ package com.hsf1002.sky.electriccard.entity;
 import android.util.Log;
 
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_NAME;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_SMS_CENTER_PREFIX;
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_TELECOM_NAME;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_TELECOM_SMS_CENTER_2_PREFIX;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_TELECOM_SMS_CENTER_PREFIX;
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_NAME;
+import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_SMS_CENTER_PREFIX;
 import static com.hsf1002.sky.electriccard.utils.Constant.GSM_PHONE_ACCUMULATED_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.GSM_PHONE_CONSISTENT_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.TELECOM_PHONE_ACCUMULATED_DURATION;
@@ -80,6 +84,35 @@ public class ProviderInfo {
 
     public void setConsistentDuration(long consistentDuration) {
         this.consistentDuration = consistentDuration;
+    }
+
+    public boolean isFromProviderSmsCenter(String address)
+    {
+        boolean result = false;
+
+        if (name.equals(CHINA_MOBILE_NAME))
+        {
+            if (address.contains(CHINA_MOBILE_SMS_CENTER_PREFIX))
+            {
+                result = true;
+            }
+        }
+        else if (name.equals(CHINA_UNICOM_NAME))
+        {
+            if (address.contains(CHINA_UNICOM_SMS_CENTER_PREFIX))
+            {
+                result = true;
+            }
+        }
+        else if (name.equals(CHINA_TELECOM_NAME))
+        {
+            if (address.contains(CHINA_TELECOM_SMS_CENTER_PREFIX) || address.contains(CHINA_TELECOM_SMS_CENTER_2_PREFIX))
+            {
+                result = true;
+            }
+        }
+
+        return result;
     }
 
     @Override

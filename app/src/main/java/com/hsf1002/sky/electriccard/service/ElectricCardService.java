@@ -3,25 +3,19 @@ package com.hsf1002.sky.electriccard.service;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.IBinder;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.hsf1002.sky.electriccard.entity.ProviderInfo;
 import com.hsf1002.sky.electriccard.receiver.ElectricCardReceiver;
-import com.hsf1002.sky.electriccard.utils.NVUtils;
+import com.hsf1002.sky.electriccard.utils.ConnectivityUtils;
 
-import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_NAME;
-import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_TELECOM_NAME;
-import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_NAME;
 import static com.hsf1002.sky.electriccard.utils.Constant.SERVICE_STARTUP_INTERVAL;
 import static com.hsf1002.sky.electriccard.utils.NVUtils.readNetworkConnectedTime;
 import static com.hsf1002.sky.electriccard.utils.NVUtils.readProviderInfo;
@@ -64,90 +58,36 @@ public class ElectricCardService extends Service {
 
     private void readSimCardOnlineDuration()
     {
-        ConnectivityManager connectivityManager = (ConnectivityManager)getApplication().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        if (ConnectivityUtils.isNetworkConnected()) {
+            Log.d(TAG, "readSimCardOnlineDuration: TYPE_MOBILE");
+            boolean isOperatorSetted = readProviderInfo();
+            long connectedStartTime = readNetworkConnectedTime();
 
-        if (networkInfo != null && networkInfo.isConnected()) {
-            int type = networkInfo.getType();
-
-            if (type == ConnectivityManager.TYPE_MOBILE) {
-                Log.d(TAG, "readSimCardOnlineDuration: TYPE_MOBILE");
-                boolean isOperatorSetted = readProviderInfo();
-                long connectedStartTime = readNetworkConnectedTime();
-
-                if (!isOperatorSetted)
-                {
-                    setOperatorInfo();
-                }
-
-                if (connectedStartTime == 0)
-                {
-                    writeNetworkConnectedTime(System.currentTimeMillis());
-                }
-
-                /* readSimcardActivated must be call again*/
-                if (!readSimcardActivated())
-                {
-                    updateDurationFromService();
-                }
-            }
-        }
-
-        /* 如果已经置激活标志位, 则开始读取短信内容 */
-        if (readSimcardActivated())
-        {
-            Log.d(TAG, "readSimCardOnlineDuration: SimcardActivated.............");
-
-            getSmsFromPhone();
-        }
-    }
-
-    private void getSmsFromPhone() {
-        //ContentResolver cr = getContentResolver();
-        //Uri SMS_INBOX = Uri.parse("content://sms/");
-        //String[] projection = new String[]{"body"};//"_id", "address", "person",, "date", "type
-        //String where = "date >  " + (System.currentTimeMillis() - 1 * 1 * 60 * 60 * 1000);     // 查询最近一小时的信息
-        Cursor cursor = null;// //cr.query(SMS_INBOX, projection, where, null, "date desc");
-
-        try {
-            cursor = getContentResolver().query(
-                    Uri.parse("content://sms"),
-                    new String[]{"_id", "address", "body", "date"},
-                    null, null, "date desc");
-            if (cursor != null) {
-                String address;
-                String body;
-                String date;
-                while (cursor.moveToNext()) {
-                    address = cursor.getString(cursor.getColumnIndex("address"));// 在这里获取短信信息
-                    body = cursor.getString(cursor.getColumnIndex("body"));// 在这里获取短信信息
-                    date = cursor.getString(cursor.getColumnIndex("date"));// 在这里获取短信信息
-
-                    Log.d(TAG, "getSmsFromPhone: address = " + address);
-                    Log.d(TAG, "getSmsFromPhone: body = " + body);
-                    Log.d(TAG, "getSmsFromPhone: date = " + date);
-                    //-----------------写自己的逻辑
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            Log.d(TAG, "getSmsFromPhone: cursor = null");
-            e.printStackTrace();
-        }
-        finally
-        {
-            if (cursor != null)
+            if (!isOperatorSetted)
             {
-                cursor.close();
+                setOperatorInfo();
+            }
+
+            if (connectedStartTime == 0)
+            {
+                writeNetworkConnectedTime(System.currentTimeMillis());
+            }
+
+            Log.d(TAG, "readSimCardOnlineDuration: connectedStartTime = " + connectedStartTime);
+            Log.d(TAG, "readSimCardOnlineDuration: readSimcardActivated = " + readSimcardActivated());
+
+            /* readSimcardActivated must be call again*/
+            if (!readSimcardActivated())
+            {
+                updateDurationFromService();
             }
         }
 
-
-        if (true)
+        /* 如果已经置激活标志位, 则开始读取短信内容, 不在这里读了,因为短信时间不好获取, 在广播那里判断 */
+        /*if (readSimcardActivated())
         {
-            // write data-time to NV
-        }
+            getSmsFromPhone();
+        }*/
     }
 
     @Override
@@ -192,5 +132,70 @@ public class ElectricCardService extends Service {
         unregisterReceiver(electricCardReceiver);
 
         super.onDestroy();
+    }
+
+    @Deprecated
+    private void getSmsFromPhone() {
+        //ContentResolver cr = getContentResolver();
+        //Uri SMS_INBOX = Uri.parse("content://sms/");
+        //String[] projection = new String[]{"body"};//"_id", "address", "person",, "date", "type
+        //String where = "date >  " + (System.currentTimeMillis() - 1 * 1 * 60 * 60 * 1000);     // 查询最近一小时的信息
+        Cursor cursor = null;// //cr.query(SMS_INBOX, projection, where, null, "date desc");
+
+        try {
+            cursor = getContentResolver().query(
+                    Uri.parse("content://sms/inbox"),
+                    new String[]{"_id", "address", "body", "date", "service_center"},
+                    null, null, "date desc");
+            if (cursor != null) {
+                String address;
+                String body;
+                String date;
+                String service_center;
+
+                while (cursor.moveToNext()) {
+                    address = cursor.getString(cursor.getColumnIndex("address"));
+                    body = cursor.getString(cursor.getColumnIndex("body"));
+                    date = cursor.getString(cursor.getColumnIndex("date"));
+                    service_center = cursor.getString(cursor.getColumnIndex("service_center"));
+
+                    Log.d(TAG, "getSmsFromPhone: address = " + address);
+                    Log.d(TAG, "getSmsFromPhone: body = " + body);
+                    Log.d(TAG, "getSmsFromPhone: date = " + date);
+                    Log.d(TAG, "getSmsFromPhone: service_center = " + service_center);
+
+                    long dateInteger = Integer.valueOf(date);
+                    long activatedRealTime = 0;//readElectricCardActivatedRealTime();
+
+                    Log.d(TAG, "getSmsFromPhone: dateInteger = " + dateInteger + ", activatedRealTime = " + activatedRealTime);
+
+                    if (ProviderInfo.getInstance().isFromProviderSmsCenter(address))
+                    {
+                        if ( dateInteger> activatedRealTime)
+                        {
+                            long offsetSeconds = (dateInteger - activatedRealTime)/1000;
+
+                            Log.d(TAG, "getSmsFromPhone: get the provider sms success...........................................offsetSeconds = " + offsetSeconds);
+                        }
+                        else
+                        {
+                            Log.d(TAG, "getSmsFromPhone: get the provider sms failed...........................................");
+                        }
+                    }
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            Log.d(TAG, "getSmsFromPhone: cursor = null");
+            e.printStackTrace();
+        }
+        finally
+        {
+            if (cursor != null)
+            {
+                cursor.close();
+            }
+        }
     }
 }

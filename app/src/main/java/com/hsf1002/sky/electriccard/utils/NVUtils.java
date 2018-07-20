@@ -7,6 +7,7 @@ import com.hsf1002.sky.electriccard.entity.ProviderInfo;
 import static com.hsf1002.sky.electriccard.utils.Constant.ACCUMULATED_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.CONSISTENT_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.ELECTRIC_CARD_ACTIVATED_DATETIME;
+import static com.hsf1002.sky.electriccard.utils.Constant.ELECTRIC_CARD_ACTIVATED_DEFAULT_TIME;
 import static com.hsf1002.sky.electriccard.utils.Constant.ELECTRIC_CARD_ACTIVATED_STATE;
 import static com.hsf1002.sky.electriccard.utils.Constant.PROVIDER_NAME_SET_STATE;
 
@@ -38,6 +39,7 @@ public class NVUtils {
         Log.d(TAG, "writeSimcardConsistentOnlineDuration: current total duration = " + (lastTotalDuration + offsetDuration)/1000 + " seconds");
     }
 
+    /* 读取持续联网时长 */
     public static long readSimcardAccumulatedOnlineDuration() {
         return SharedPreUtils.getInstance().getLong(ACCUMULATED_DURATION, 0L);
     }
@@ -52,7 +54,7 @@ public class NVUtils {
             SharedPreUtils.getInstance().putLong(ACCUMULATED_DURATION, sNetworkConnectedTimeDuration);
         }
 
-        Log.d(TAG, "writeSimcardAccumulatedOnlineDuration: current once duration = " + sNetworkConnectedTimeDuration);
+        Log.d(TAG, "writeSimcardAccumulatedOnlineDuration: current once duration = " + sNetworkConnectedTimeDuration/1000 + " seconds");
     }
 
     public static boolean readSimcardActivated() {
@@ -64,7 +66,7 @@ public class NVUtils {
     }
 
     public static String readSimcardDateTime() {
-        return SharedPreUtils.getInstance().getString(ELECTRIC_CARD_ACTIVATED_DATETIME, "2018-01-01-01-01-01");
+        return SharedPreUtils.getInstance().getString(ELECTRIC_CARD_ACTIVATED_DATETIME, ELECTRIC_CARD_ACTIVATED_DEFAULT_TIME);
     }
 
     public static void writeSimcardDateTime(String datatime) {
@@ -81,14 +83,15 @@ public class NVUtils {
 
     /* 只有断开网络连接的时候,才写数据, 不做是否激活的判断 */
     public static void updateDurationFromReceiver() {
-        long curentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
         long startTime = readNetworkConnectedTime();
-        long offset = curentTime - startTime;
+        long offset = currentTime - startTime;
 
         assert (offset > 0);
-        //Log.d(TAG, "updateDurationFromReceiver: curentTime = " + curentTime/1000 + " seconds, startTime = " + startTime/1000 + " seconds");
+        Log.d(TAG, "updateDurationFromReceiver: curentTime = " + currentTime + ", startTime = " + startTime);
         Log.d(TAG, "updateDurationFromReceiver: once online duration = " + offset / 1000 + " seconds");
 
+        writeNetworkConnectedTime(currentTime);
         writeSimcardAccumulatedOnlineDuration(offset);
         writeSimcardConsistentOnlineDuration(offset);
     }
@@ -112,6 +115,7 @@ public class NVUtils {
 
         if (lastAccumulatedDuration + offset > ProviderInfo.getInstance().getAccumulatedDuration()) {
             if (lastConsistentDuration + offset > ProviderInfo.getInstance().getConsistentDuration()) {
+                writeNetworkConnectedTime(curentTime);
                 writeSimcardAccumulatedOnlineDuration(offset);
                 writeSimcardConsistentOnlineDuration(offset);
                 Log.d(TAG, "updateDurationFromService: write simcard activated flag true........................................................");
@@ -131,12 +135,22 @@ public class NVUtils {
 
     public static void clearActivatedState()
     {
+        /* 读取运营商信息清空 */
         writeProviderInfo(false);
 
+        /* 开始的联网时间清空 */
         writeNetworkConnectedTime(0L);
+
+        /* 持续联网时间清空 */
         SharedPreUtils.getInstance().putLong(CONSISTENT_DURATION, 0L);
+
+        /* 累积联网时间清空 */
         SharedPreUtils.getInstance().putLong(ACCUMULATED_DURATION, 0L);
 
+        /* 电子保卡激活标志位清空 */
         writeSimcardActivated(false);
+
+        /* 收到的第一条运营商信息的时间清空 */
+        writeSimcardDateTime(ELECTRIC_CARD_ACTIVATED_DEFAULT_TIME);
     }
 }
