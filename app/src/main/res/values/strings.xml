@@ -2,4 +2,9 @@
     <string name="app_name">ElectricCard</string>
 
     <string name="activate_message">ElectricCard %1$s year %2$s month %3$s day %4$s hour %5$s minute %6$s second activated</string>
+
+    <string name="clear_alert_title">Tip</string>
+
+    <string name="clear_alert_content">sure to clear activated flag?</string>
+
 </resources>

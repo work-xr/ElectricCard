@@ -9,26 +9,26 @@ import com.hsf1002.sky.electriccard.application.ElectricCardApp;
  * Created by hefeng on 18-7-18.
  */
 
-public class SharedPreUtils {
+public class PrefsUtils {
     //private static final String SHARED_NAME = SHARED_PREFERENCE_NAME;
-    private static SharedPreUtils sInstance;
+    private static PrefsUtils sInstance;
     private static SharedPreferences sharedPreferences;
     private static SharedPreferences.Editor editor;
 
-    public SharedPreUtils() {
+    public PrefsUtils() {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(ElectricCardApp.getAppContext());
         editor = sharedPreferences.edit();
     }
 
-    public static SharedPreUtils getInstance()
+    public static PrefsUtils getInstance()
     {
         if (sInstance == null)
         {
-            synchronized (SharedPreUtils.class)
+            synchronized (PrefsUtils.class)
             {
                 if (sInstance == null)
                 {
-                    sInstance = new SharedPreUtils();
+                    sInstance = new PrefsUtils();
                 }
             }
         }

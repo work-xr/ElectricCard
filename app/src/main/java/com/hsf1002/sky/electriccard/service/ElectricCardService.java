@@ -16,13 +16,13 @@ import com.hsf1002.sky.electriccard.entity.ProviderInfo;
 import com.hsf1002.sky.electriccard.receiver.ElectricCardReceiver;
 import com.hsf1002.sky.electriccard.utils.ConnectivityUtils;
 
+import static com.hsf1002.sky.electriccard.entity.ProviderInfo.setProviderInfo;
 import static com.hsf1002.sky.electriccard.utils.Constant.SERVICE_STARTUP_INTERVAL;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.readNetworkConnectedTime;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.readProviderInfo;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardActivated;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.updateDurationFromService;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.writeNetworkConnectedTime;
-import static com.hsf1002.sky.electriccard.utils.ProviderUtils.setOperatorInfo;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readNetworkConnectedTime;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readProviderNameStatus;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardActivated;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.updateDurationFromService;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeNetworkConnectedTime;
 
 /**
  * Created by hefeng on 18-7-17.
@@ -59,30 +59,33 @@ public class ElectricCardService extends Service {
     private void readSimCardOnlineDuration()
     {
         if (ConnectivityUtils.isNetworkConnected()) {
-            Log.d(TAG, "readSimCardOnlineDuration: TYPE_MOBILE");
-            boolean isOperatorSetted = readProviderInfo();
+            boolean isProviderNameRead = readProviderNameStatus();
             long connectedStartTime = readNetworkConnectedTime();
 
-            if (!isOperatorSetted)
+            if (!isProviderNameRead)
             {
-                setOperatorInfo();
+                setProviderInfo();
             }
 
+            Log.d(TAG, "readSimCardOnlineDuration: connectedStartTime = " + connectedStartTime);
+
+            /* 开机第一次connectedStartTime = 0, 断网后再次重置为 0 */
             if (connectedStartTime == 0)
             {
                 writeNetworkConnectedTime(System.currentTimeMillis());
             }
 
-            Log.d(TAG, "readSimCardOnlineDuration: connectedStartTime = " + connectedStartTime);
-            Log.d(TAG, "readSimCardOnlineDuration: readSimcardActivated = " + readSimcardActivated());
-
             /* readSimcardActivated must be call again*/
             if (!readSimcardActivated())
             {
+                Log.d(TAG, "readSimCardOnlineDuration: readSimcardActivated = false, update duration from service again ");
                 updateDurationFromService();
             }
+            else
+            {
+                Log.d(TAG, "readSimCardOnlineDuration: readSimcardActivated = true..................................... ");
+            }
         }
-
         /* 如果已经置激活标志位, 则开始读取短信内容, 不在这里读了,因为短信时间不好获取, 在广播那里判断 */
         /*if (readSimcardActivated())
         {
@@ -101,14 +104,15 @@ public class ElectricCardService extends Service {
         PendingIntent pi = PendingIntent.getService(context, 0, intent, 0);
 
         AlarmManager manager = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
-        Log.d(TAG, "setServiceAlarm: isOn = " + isOn);
 
         if  (isOn)
         {
+            Log.d(TAG, "setServiceAlarm: turn on start repeating service........................");
             manager.setRepeating(AlarmManager.RTC, System.currentTimeMillis(), startServiceInterval, pi);
         }
         else
         {
+            Log.d(TAG, "setServiceAlarm: turn off stopped alarm service..........................");
             manager.cancel(pi);
             pi.cancel();
         }

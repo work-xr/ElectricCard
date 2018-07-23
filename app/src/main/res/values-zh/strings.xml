@@ -2,4 +2,8 @@
     <string name="app_name">电子保卡</string>
 
     <string name="activate_message">电子保修记录已于 %1$s 年 %2$s 月 %3$s 日 %4$s 时 %5$s 分 %6$s 秒 激活</string>
+
+    <string name="clear_alert_title">提示</string>
+
+    <string name="clear_alert_content">确定要清除电子保卡激活标志?</string>
 </resources>

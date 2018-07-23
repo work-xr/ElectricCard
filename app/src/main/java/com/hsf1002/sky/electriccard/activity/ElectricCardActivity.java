@@ -6,9 +6,10 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.hsf1002.sky.electriccard.R;
+import com.hsf1002.sky.electriccard.utils.SaveFileUtils;
 
-import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardActivated;
-import static com.hsf1002.sky.electriccard.utils.NVUtils.readSimcardDateTime;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardActivated;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardDateTime;
 
 public class ElectricCardActivity extends Activity {
     private static final String TAG = "ElectricCardActivity";
@@ -37,10 +38,14 @@ public class ElectricCardActivity extends Activity {
         if (readSimcardActivated())
         {
             Log.d(TAG, "setTextViev: simcard activated");
-            electricStr = readSimcardDateTime();
-        }
+            electricStr = SaveFileUtils.getInstance().readElectricCardActivated();
 
-        Log.d(TAG, "setTextViev: electricStr = " + electricStr);
+            Log.d(TAG, "setTextViev: electricStr from file = " + electricStr);
+
+            electricStr = readSimcardDateTime();
+
+            Log.d(TAG, "setTextViev: electricStr from shared pref = " + electricStr);
+        }
 
         textView.setText(electricStr);
     }

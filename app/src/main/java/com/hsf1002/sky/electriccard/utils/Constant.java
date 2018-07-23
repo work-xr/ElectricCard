@@ -5,9 +5,6 @@ package com.hsf1002.sky.electriccard.utils;
  */
 
 public class Constant {
-
-    /* 需要保存到NV中的状态,电子保卡是否已经激活 */
-    public static boolean IS_ELECTRIC_CARD_ACTIVATED = false;
     /* 时间单位 */
     public static final int PHONE_DRATION_UNIT = 1000;
 
@@ -30,7 +27,10 @@ public class Constant {
     public static final String CHINA_TELECOM_NAME = "TELECOM";
 
     /* 需要保存到sharepreferences中的状态,运营商是否已经读取 */
-    public static final String PROVIDER_NAME_SET_STATE = "provider_name_set";
+    public static final String PROVIDER_NAME_PRESET_STATE = "provider_name_preset";
+    public static final String PROVIDER_ACCUMULATED_PRESET_STATE = "provider_accumulated_preset";
+    public static final String PROVIDER_CONSISTENT_PRESET_STATE = "provider_consistent_set";
+
     /* 需要保存到NV中的状态,电子保卡是否已经激活, 为了测试方便, 先保存到sharepreferences  */
     public static final String ELECTRIC_CARD_ACTIVATED_STATE = "electric_card_activated_state";
     /* 需要保存到NV中的状态,电子保卡已经激活后收到的运营商信息的时间, 为了测试方便, 先保存到sharepreferences  */
