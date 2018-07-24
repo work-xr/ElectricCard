@@ -5,6 +5,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.hsf1002.sky.electriccard.application.ElectricCardApp;
+import com.hsf1002.sky.electriccard.utils.PrefsUtils;
 
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_NAME;
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_MOBILE_SMS_CENTER_PREFIX;
@@ -15,9 +16,12 @@ import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_NAME;
 import static com.hsf1002.sky.electriccard.utils.Constant.CHINA_UNICOM_SMS_CENTER_PREFIX;
 import static com.hsf1002.sky.electriccard.utils.Constant.GSM_PHONE_ACCUMULATED_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.GSM_PHONE_CONSISTENT_DURATION;
+import static com.hsf1002.sky.electriccard.utils.Constant.PROVIDER_ACCUMULATED_PRESET_STATE;
+import static com.hsf1002.sky.electriccard.utils.Constant.PROVIDER_CONSISTENT_PRESET_STATE;
+import static com.hsf1002.sky.electriccard.utils.Constant.PROVIDER_NAME_PRESET_STATE;
 import static com.hsf1002.sky.electriccard.utils.Constant.TELECOM_PHONE_ACCUMULATED_DURATION;
 import static com.hsf1002.sky.electriccard.utils.Constant.TELECOM_PHONE_CONSISTENT_DURATION;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeProviderNameStatus;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readProviderName;
 
 
 /**
@@ -28,7 +32,7 @@ import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeProviderNam
 public class ProviderInfo {
     public static final String TAG = "ProviderInfo";
 
-    private String name;    // cmcc, unicom or telecom
+    /*private String name;    // cmcc, unicom or telecom
 
     private long accumulatedDuration;
 
@@ -119,6 +123,7 @@ public class ProviderInfo {
 
         return result;
     }
+    */
 
     /*
 * 电信 46003 46005 46011 46012 46050 46051 46052 46053 46054 46055 46056 46057 46058 46059 946003 946005 946011 946012 946050 946051 946052 946053 946054 946055 946056 946057 946058 946059
@@ -141,21 +146,68 @@ public class ProviderInfo {
             }
             Log.d(TAG, "setProviderInfo: providerName = " + providerName);
 
-            ProviderInfo.getInstance().setName(providerName);
-            ProviderInfo.getInstance().setDuration();
+            //ProviderInfo.getInstance().setName(providerName);
+            setNameDuration(providerName);
 
-            writeProviderNameStatus(true);
+            //resetProviderNameDuration(true);
         } else {
             Log.d(TAG, "setProviderInfo: providerName = null" );
         }
     }
 
-    @Override
-    public String toString() {
-        return "ProviderInfo{" +
-                "name='" + name + '\'' +
-                ", accumulatedDuration=" + accumulatedDuration +
-                ", consistentDuration=" + consistentDuration +
-                '}';
+    private static void setNameDuration(String name)
+    {
+        if (name.equals(CHINA_MOBILE_NAME))
+        {
+            PrefsUtils.getInstance().putString(PROVIDER_NAME_PRESET_STATE, CHINA_MOBILE_NAME);
+            PrefsUtils.getInstance().putLong(PROVIDER_ACCUMULATED_PRESET_STATE, GSM_PHONE_ACCUMULATED_DURATION);
+            PrefsUtils.getInstance().putLong(PROVIDER_CONSISTENT_PRESET_STATE, GSM_PHONE_CONSISTENT_DURATION);
+        }
+        else if (name.equals(CHINA_UNICOM_NAME))
+        {
+            PrefsUtils.getInstance().putString(PROVIDER_NAME_PRESET_STATE, CHINA_UNICOM_NAME);
+            PrefsUtils.getInstance().putLong(PROVIDER_ACCUMULATED_PRESET_STATE, GSM_PHONE_ACCUMULATED_DURATION);
+            PrefsUtils.getInstance().putLong(PROVIDER_CONSISTENT_PRESET_STATE, GSM_PHONE_CONSISTENT_DURATION);
+        }
+        else if (name.equals(CHINA_TELECOM_NAME))
+        {
+            PrefsUtils.getInstance().putString(PROVIDER_NAME_PRESET_STATE, CHINA_TELECOM_NAME);
+            PrefsUtils.getInstance().putLong(PROVIDER_ACCUMULATED_PRESET_STATE, TELECOM_PHONE_ACCUMULATED_DURATION);
+            PrefsUtils.getInstance().putLong(PROVIDER_CONSISTENT_PRESET_STATE, TELECOM_PHONE_CONSISTENT_DURATION);
+        }
+        else
+        {
+        }
+        Log.d(TAG, "set provider name and duration success ......................................... " );
+    }
+
+    public static boolean isFromProviderSmsCenter(String address)
+    {
+        boolean result = false;
+        String name = readProviderName();
+
+        if (name.equals(CHINA_MOBILE_NAME))
+        {
+            if (address.contains(CHINA_MOBILE_SMS_CENTER_PREFIX))
+            {
+                result = true;
+            }
+        }
+        else if (name.equals(CHINA_UNICOM_NAME))
+        {
+            if (address.contains(CHINA_UNICOM_SMS_CENTER_PREFIX))
+            {
+                result = true;
+            }
+        }
+        else if (name.equals(CHINA_TELECOM_NAME))
+        {
+            if (address.contains(CHINA_TELECOM_SMS_CENTER_PREFIX) || address.contains(CHINA_TELECOM_SMS_CENTER_2_PREFIX))
+            {
+                result = true;
+            }
+        }
+
+        return result;
     }
 }

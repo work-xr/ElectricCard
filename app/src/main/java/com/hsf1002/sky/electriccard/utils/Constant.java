@@ -12,9 +12,9 @@ public class Constant {
     public static final int SERVICE_STARTUP_INTERVAL = 60 * PHONE_DRATION_UNIT;
 
     /* GSM手机持续开机SIM卡联网时长 */
-    public static final int GSM_PHONE_CONSISTENT_DURATION = 1 * 20 * 60 * PHONE_DRATION_UNIT;
+    public static final int GSM_PHONE_CONSISTENT_DURATION = 1 * 5* 60 * PHONE_DRATION_UNIT;
     /* GSM手机累积开机SIM卡联网时长 */
-    public static final int GSM_PHONE_ACCUMULATED_DURATION = 1 * 10 * 60 * PHONE_DRATION_UNIT;
+    public static final int GSM_PHONE_ACCUMULATED_DURATION = 1 * 5 * 60 * PHONE_DRATION_UNIT;
     /* 电信手机持续开机SIM卡联网时长 */
     public static final int TELECOM_PHONE_CONSISTENT_DURATION = 6 * 60 * 60 * PHONE_DRATION_UNIT;
     /* 电信手机累积开机SIM卡联网时长 */

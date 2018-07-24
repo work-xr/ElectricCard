@@ -2,10 +2,11 @@ package com.hsf1002.sky.electriccard.utils;
 
 import android.util.Log;
 
+import com.hsf1002.sky.electriccard.entity.ResultInfo;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -17,8 +18,8 @@ import java.io.IOException;
 
 public class SaveFileUtils {
     private static final String TAG = "SaveFileUtils";
-    private static final String FILE_PATH = "productinfo";
-    private static final String FILE_NAME = "electriccard.conf";
+    private static final String FILE_PATH = "/productinfo/electriccard.conf";
+    //private static final String FILE_NAME = "electriccard.conf";
 
     private static final class Holder
     {
@@ -30,17 +31,34 @@ public class SaveFileUtils {
         return Holder.sInstance;
     }
 
-    public void writeElectricCardActivated(boolean activated, String time)
+    public void writeElectricCardActivated(ResultInfo resultInfo)
     {
         FileOutputStream fileOutputStream = null;
         BufferedOutputStream bufferedOutputStream = null;
-        Log.d(TAG, "writeElectricCardActivated: write file start.......................");
+        File file = new File(FILE_PATH/*, FILE_NAME*/);
+
+        if (file.exists())
+        {
+            file.delete();
+        }
 
         try {
-            fileOutputStream = new FileOutputStream(new File(FILE_PATH, FILE_NAME));
+            file.createNewFile();
+        }
+        catch (IOException e)
+        {
+            Log.d(TAG, "writeElectricCardActivated: create file failed.......................");
+            e.printStackTrace();
+        }
+
+        Log.d(TAG, "writeElectricCardActivated: write file start.............................");
+
+        try {
+            fileOutputStream = new FileOutputStream(file);
             bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-            bufferedOutputStream.write(String.valueOf(activated).getBytes());
-            bufferedOutputStream.write(time.getBytes());
+            bufferedOutputStream.write(String.valueOf(resultInfo.getFlag()).getBytes());
+            bufferedOutputStream.write("\n".getBytes());
+            bufferedOutputStream.write(resultInfo.getTime().getBytes());
             bufferedOutputStream.flush();
         } catch (Exception e) {
             e.printStackTrace();
@@ -48,19 +66,29 @@ public class SaveFileUtils {
             try {
                 bufferedOutputStream.close();
                 fileOutputStream.close();
-                Log.d(TAG, "writeElectricCardActivated: write file success.......................");
+                Log.d(TAG, "writeElectricCardActivated: write file success...................");
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public String readElectricCardActivated()
-    {
-        StringBuilder content = null;
-        File file = new File(FILE_PATH, FILE_NAME);
+    public void resetElectricCardActivated() {
+        File file = new File(FILE_PATH/*, FILE_NAME*/);
 
-        Log.d(TAG, "readElectricCardActivated: read file start .......................");
+        Log.d(TAG, "resetElectricCardActivated: delete file start............................");
+        if (file.exists()) {
+            file.delete();
+            Log.d(TAG, "resetElectricCardActivated: delete file finished.....................");
+        }
+    }
+
+    public ResultInfo readElectricCardActivated( )
+    {
+        File file = new File(FILE_PATH/*, FILE_NAME*/);
+        ResultInfo resultInfo = null;
+
+        Log.d(TAG, "readElectricCardActivated: read file start ..............................");
 
         if (file.isFile() && file.exists())
         {
@@ -72,10 +100,27 @@ public class SaveFileUtils {
                 bufferedReader = new BufferedReader(fileReader);
                 String line = bufferedReader.readLine();
 
-                while (line != null) {
-                    content.append(line);
-                    line = bufferedReader.readLine();
+                //while (line != null) {
+                    //content.append(line);
+                Log.d(TAG, "readElectricCardActivated: line = " + line);
+                resultInfo = new ResultInfo();
+
+                if (line.contains("false"))
+                {
+                    resultInfo.setFlag(false);
                 }
+                else if (line.contains("true"))
+                {
+                    resultInfo.setFlag(true);
+                }
+                else
+                {
+                    resultInfo.setFlag(false);
+                }
+                Log.d(TAG, "readElectricCardActivated: line = " + line);
+                    //line = bufferedReader.readLine();
+                resultInfo.setTime(bufferedReader.readLine());
+                //}
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -84,7 +129,6 @@ public class SaveFileUtils {
                 try {
                     fileReader.close();
                     bufferedReader.close();
-                    Log.d(TAG, "readElectricCardActivated: read file success....................... content = " + content.toString());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -92,9 +136,9 @@ public class SaveFileUtils {
         }
         else
         {
-            Log.d(TAG, "readElectricCardActivated: read file failed, file not existed .......................");
+            Log.d(TAG, "readElectricCardActivated: read file failed, file not existed .......");
         }
 
-        return content.toString();
+        return resultInfo;
     }
 }

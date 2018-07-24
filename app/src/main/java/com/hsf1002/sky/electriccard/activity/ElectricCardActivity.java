@@ -6,10 +6,8 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.hsf1002.sky.electriccard.R;
+import com.hsf1002.sky.electriccard.entity.ResultInfo;
 import com.hsf1002.sky.electriccard.utils.SaveFileUtils;
-
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardActivated;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardDateTime;
 
 public class ElectricCardActivity extends Activity {
     private static final String TAG = "ElectricCardActivity";
@@ -33,20 +31,35 @@ public class ElectricCardActivity extends Activity {
         String hour = "**";
         String minute = "**";
         String second = "**";
-        String electricStr = getString(R.string.activate_message, year, month, day, hour, minute, second);
+        String electricStrDefault = null;
+        ResultInfo resultInfo = SaveFileUtils.getInstance().readElectricCardActivated();
 
-        if (readSimcardActivated())
+        if (resultInfo == null)
         {
-            Log.d(TAG, "setTextViev: simcard activated");
-            electricStr = SaveFileUtils.getInstance().readElectricCardActivated();
+            Log.d(TAG, "setTextViev: resultInfo read from file is empty..............................");
+        }
+        else
+        {
+            // 20180723205009
+            String dateTime = resultInfo.getTime();
 
-            Log.d(TAG, "setTextViev: electricStr from file = " + electricStr);
+            if (dateTime.length() != 14) {
+                Log.d(TAG, "setTextViev: dataTime read from file length error..............................");
+                return;
+            }
 
-            electricStr = readSimcardDateTime();
-
-            Log.d(TAG, "setTextViev: electricStr from shared pref = " + electricStr);
+            year = dateTime.substring(0, 4);
+            month = dateTime.substring(4, 6);
+            day = dateTime.substring(6, 8);
+            hour = dateTime.substring(8, 10);
+            minute = dateTime.substring(10, 12);
+            second = dateTime.substring(12, 14);
         }
 
-        textView.setText(electricStr);
+        electricStrDefault = getString(R.string.activate_message, year, month, day, hour, minute, second);
+
+        Log.d(TAG, "setTextViev: electricStr from shared pref = " + electricStrDefault);
+
+        textView.setText(electricStrDefault);
     }
 }

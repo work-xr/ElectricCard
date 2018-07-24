@@ -8,9 +8,11 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.hsf1002.sky.electriccard.entity.ProviderInfo;
+import com.hsf1002.sky.electriccard.entity.ResultInfo;
 import com.hsf1002.sky.electriccard.service.ElectricCardService;
 import com.hsf1002.sky.electriccard.utils.DateTimeUtils;
 import com.hsf1002.sky.electriccard.utils.SaveFileUtils;
@@ -18,12 +20,12 @@ import com.hsf1002.sky.electriccard.utils.SaveFileUtils;
 import static android.content.Intent.ACTION_SHUTDOWN;
 import static com.hsf1002.sky.electriccard.entity.ProviderInfo.setProviderInfo;
 import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readNetworkConnectedTime;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readProviderNameStatus;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardActivated;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardDateTime;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readProviderName;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.readSimcardAccumulatedOnlineDuration;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.resetProviderNameDuration;
+import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.resetSimcardAccumulatedOnlineDuration;
 import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.updateDurationFromReceiver;
 import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeNetworkConnectedTime;
-import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeProviderNameStatus;
 import static com.hsf1002.sky.electriccard.utils.SavePrefsUtils.writeSimcardDateTime;
 
 /**
@@ -36,19 +38,22 @@ public class ElectricCardReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
-        boolean isSimcardActivated = readSimcardActivated();
-        boolean isProviderNameRead = readProviderNameStatus();
+        ResultInfo resultInfo = SaveFileUtils.getInstance().readElectricCardActivated();
+        boolean isSimcardActivated = resultInfo.getFlag();
+        String dateTime = resultInfo.getTime();
+        String providerName = readProviderName();
 
         Log.d(TAG, "onReceive: isSimcardActivated = " + isSimcardActivated);
-        Log.d(TAG, "onReceive: isProviderNameRead = " + isProviderNameRead);
+        Log.d(TAG, "onReceive: dateTime = " + dateTime);
+        Log.d(TAG, "onReceive: isProviderNameRead = " + providerName);
 
         if (action.equals(Intent.ACTION_BOOT_COMPLETED))
         {
             Log.d(TAG, "onReceive: ACTION_BOOT_COMPLETED.................................." );
-            /* 还要考虑一种拔电池的情况, 该值不为空,说明没有走正常关机流程进行清空, 但是无法防止 updateDurationFromReceiver 没有更新的问题 */
-            if (isProviderNameRead)
+            /* 还要考虑一种拔电池的情况, 该值不为空, 说明没有走正常关机流程进行清空 */
+            if (!TextUtils.isEmpty(providerName))
             {
-                writeProviderNameStatus(false);
+                resetProviderNameDuration();
             }
             ElectricCardService.setServiceAlarm(context.getApplicationContext(), !isSimcardActivated);
         }
@@ -65,7 +70,7 @@ public class ElectricCardReceiver extends BroadcastReceiver {
                 return;
             }
 
-            if (!isProviderNameRead)
+            if (TextUtils.isEmpty(providerName))
             {
                 setProviderInfo();
             }
@@ -85,7 +90,7 @@ public class ElectricCardReceiver extends BroadcastReceiver {
                 {
                     Log.d(TAG, "mobile disconnected.................................................. sNetworkConnectedStartTime 1 = " + readNetworkConnectedTime());
                     /* service一分钟跑一次, 大概率会在service中停止 */
-                    //if (/*readNetworkConnectedTime() != 0*/已经联网开始时间已经在前面写入  /*!readSimcardActivated()*/ 激活条件在上面已经判断)
+                    //if (/*readNetworkConnectedTime() != 0*/已经联网开始时间已经在前面写入  /*!readSimcardActivatedFromFile()*/ 激活条件在上面已经判断)
                     /* 断网广播会连续出现两次 */
                     if (readNetworkConnectedTime() != 0)
                     {
@@ -104,7 +109,15 @@ public class ElectricCardReceiver extends BroadcastReceiver {
 			Log.d(TAG, "onReceive: SMS_RECEIVED_ACTION .");
 
 			/* 如果电子保卡已经激活, 开始截取短信, 解析是否在自运营商 */
-            if (isSimcardActivated && readSimcardDateTime() == null)
+            if (!isSimcardActivated)
+            {
+                Log.d(TAG, "onReceive: get a msg, but the electric card has not activated .................................................");
+            }
+            else if (!TextUtils.isEmpty(dateTime))
+            {
+                Log.d(TAG, "onReceive: get a msg, but the DateTime is not empty, not clear? ...............................................");
+            }
+            else
             {
                 Bundle bundle = intent.getExtras();
                 SmsMessage msg = null;
@@ -124,12 +137,15 @@ public class ElectricCardReceiver extends BroadcastReceiver {
                         Log.d(TAG, "onReceive: center = " + center);
                         Log.d(TAG, "onReceive: receiveTime = " + receiveTime);
 
-                        if (ProviderInfo.getInstance().isFromProviderSmsCenter(address)) {
+                        if (ProviderInfo.isFromProviderSmsCenter(address)) {
                             Log.d(TAG, "onReceive: get the provider msg success.........................................................");
+                            ResultInfo newResultInfo = new ResultInfo();
                             /* 保存运营商信息的时间 */
                             writeSimcardDateTime(receiveTime);
                             /* 将电子保卡激活标志写入文件 */
-                            SaveFileUtils.getInstance().writeElectricCardActivated(readSimcardActivated(), readSimcardDateTime());
+                            newResultInfo.setFlag(true);
+                            newResultInfo.setTime(receiveTime);
+                            SaveFileUtils.getInstance().writeElectricCardActivated(newResultInfo);
                             /* 停止定时服务 */
                             ElectricCardService.setServiceAlarm(context.getApplicationContext(), false);
                             break;
@@ -137,30 +153,23 @@ public class ElectricCardReceiver extends BroadcastReceiver {
                     }
                 }
             }
-            else
-            {
-                Log.d(TAG, "onReceive: get a msg, but the electric card has not activated .................................................");
-            }
 		}
-/*
-        if (action.equals(Intents.DATA_SMS_RECEIVED_ACTION))
-        {
-            Log.d(TAG, "onReceive: DATA_SMS_RECEIVED_ACTION .");
-        }
-*/
+
         /* 先接收到关机广播, 再接收到断网广播, 差了大约3s */
         if (action.equals(ACTION_SHUTDOWN))
         {
-            Log.d(TAG, "onReceive: ACTION_SHUTDOWN .................................");
+            Log.d(TAG, "onReceive: ACTION_SHUTDOWN this power on online duration is " + readSimcardAccumulatedOnlineDuration()/1000 + "s");
 
             /* 关机的时候要更新持续时长和累积时长, 此处要屏蔽, 会和断网时候重复, 导致统计2次 */
             //if (readNetworkConnectedTime() != 0)
             //{
                 //updateDurationFromReceiver();
             //}
+            /* 关机的时候,清空本次开机联网时长 */
+            resetSimcardAccumulatedOnlineDuration();
 
             /* 关机的时候,清空读取的运营商信息 */
-            writeProviderNameStatus(false);
+            resetProviderNameDuration();
         }
     }
 }

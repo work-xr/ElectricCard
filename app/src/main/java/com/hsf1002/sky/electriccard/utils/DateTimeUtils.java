@@ -164,7 +164,7 @@ public class DateTimeUtils {
     *
 07-19 14:14:04.807  1739  1739 D ElectricCardApp: onCreate:
 
-07-19 14:14:04.807  1739  1739 D ElectricCardReceiver: onReceive: boot completed. SavePrefsUtils.readSimcardActivated() = false
+07-19 14:14:04.807  1739  1739 D ElectricCardReceiver: onReceive: boot completed. SavePrefsUtils.readSimcardActivatedFromFile() = false
 07-19 14:14:04.807  1739  1739 D ElectricCardService: setServiceAlarm: isOn = true
 07-19 14:14:04.828   803   803 D Validator_BootCompleteReceiver: Receive action ::: android.intent.action.BOOT_COMPLETED
 
