@@ -2,6 +2,7 @@ package com.hsf1002.sky.electriccard.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -19,7 +20,6 @@ public class ElectricCardActivity extends Activity {
         setContentView(R.layout.activity_electric_card);
 
         textView = (TextView)findViewById(R.id.electric_card_tv);
-
         setTextViev();
     }
 
@@ -33,18 +33,28 @@ public class ElectricCardActivity extends Activity {
         String second = "**";
         String electricStrDefault = null;
         ResultInfo resultInfo = SaveFileUtils.getInstance().readElectricCardActivated();
+        boolean isSimcardActivated = resultInfo.getFlag();
+        String dateTime = resultInfo.getTime();
 
-        if (resultInfo == null)
+        if (!isSimcardActivated)
         {
-            Log.d(TAG, "setTextViev: resultInfo read from file is empty..............................");
+            Log.d(TAG, "setTextViev: electric card not activated.............................");
+            electricStrDefault = getString(R.string.activate_message, year, month, day, hour, minute, second);
+            textView.setText(electricStrDefault);
+            return;
+        }
+
+        if (TextUtils.isEmpty(dateTime)) {
+            Log.d(TAG, "setTextViev: does not receive the first msg from provider........");
+            electricStrDefault = getString(R.string.activate_message, year, month, day, hour, minute, second);
+            textView.setText(electricStrDefault);
+            return;
         }
         else
         {
             // 20180723205009
-            String dateTime = resultInfo.getTime();
-
             if (dateTime.length() != 14) {
-                Log.d(TAG, "setTextViev: dataTime read from file length error..............................");
+                Log.d(TAG, "setTextViev: dataTime read from file length error............");
                 return;
             }
 
@@ -54,12 +64,8 @@ public class ElectricCardActivity extends Activity {
             hour = dateTime.substring(8, 10);
             minute = dateTime.substring(10, 12);
             second = dateTime.substring(12, 14);
+            electricStrDefault = getString(R.string.activate_message, year, month, day, hour, minute, second);
+            textView.setText(electricStrDefault);
         }
-
-        electricStrDefault = getString(R.string.activate_message, year, month, day, hour, minute, second);
-
-        Log.d(TAG, "setTextViev: electricStr from shared pref = " + electricStrDefault);
-
-        textView.setText(electricStrDefault);
     }
 }

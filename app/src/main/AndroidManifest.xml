@@ -24,29 +24,30 @@
         android:allowBackup="true"
         android:label="@string/app_name"
         >
+        <!-- 显示电子保卡激活状态 暗码: *#*#8888*#*# -->
         <activity android:name=".activity.ElectricCardActivity"
             android:exported="true">
         </activity>
 
+        <!-- 清除电子保卡激活状态 暗码: *#*#8888*8888*#*# -->
         <activity android:name=".activity.ClearActivity"
             android:exported="true">
         </activity>
 
-        <!-- 监听开机广播, SIM卡网络状态变化 -->
+        <!-- 监听开机, 关机广播, SIM卡网络状态变化, 接收短信 -->
         <receiver android:name=".receiver.ElectricCardReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-                <!--action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
-                <action android:name="android.net.wifi.STATE_CHANGE" /-->
+
                 <action android:name="android.intent.action.ACTION_SHUTDOWN" />
 
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 
-        <!-- sticky服务, 定时读取持续和累计网络连接时间,判断是否需要激活 -->
+        <!-- 定时服务, 定时(每隔一分钟)读取持续和累计网络连接时间,判断电子保卡是否已经激活 -->
         <service android:name=".service.ElectricCardService" />
 
     </application>

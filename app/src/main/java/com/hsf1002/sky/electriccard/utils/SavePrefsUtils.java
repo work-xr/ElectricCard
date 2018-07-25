@@ -26,40 +26,29 @@ public class SavePrefsUtils {
 
     /* 一次网络连接成功的开始时间 */
     private static long sNetworkConnectedStartTime = 0;
-    /* 一次网络连接持续的时间, 累加后变成 一次开机网络连接持续的时间 */
-    private static long sNetworkConnectedTimeDuration = 0;
 
-    /* 读取累积联网时长 */
+    /* 读取持续联网时长 */
     public static long readSimcardConsistentOnlineDuration() {
         return PrefsUtils.getInstance().getLong(CONSISTENT_DURATION, 0L);
     }
 
-    /* 写入累积联网时长, 重新开机也会累加 */
+    /* 写入持续联网时长, 重新开机也会累加 */
     public static void writeSimcardConsistentOnlineDuration(long offsetDuration) {
-        long lastTotalDuration = readSimcardConsistentOnlineDuration();
-
-        PrefsUtils.getInstance().putLong(CONSISTENT_DURATION, lastTotalDuration + offsetDuration);
-
-        Log.d(TAG, "writeSimcardConsistentOnlineDuration: current consistent duration updated = " + (lastTotalDuration + offsetDuration)/1000 + " seconds");
+        long lastConsistentDuration = readSimcardConsistentOnlineDuration();
+        PrefsUtils.getInstance().putLong(CONSISTENT_DURATION, lastConsistentDuration + offsetDuration);
+        Log.d(TAG, "writeSimcardConsistentOnlineDuration: current consistent duration updated = " + (lastConsistentDuration + offsetDuration)/1000 + " seconds");
     }
 
-    /* 读取持续联网时长 */
+    /* 读取累积联网时长 */
     public static long readSimcardAccumulatedOnlineDuration() {
         return PrefsUtils.getInstance().getLong(ACCUMULATED_DURATION, 0L);
     }
 
     /* 把每次网络连接持续的时长累加, 成为 本次开机累计的联网时长, 只记录本次开机联网开机, 关机会清空 */
     public static void writeSimcardAccumulatedOnlineDuration(long offsetDuration) {
-        //long lastOnceDuration = readSimcardAccumulatedOnlineDuration();
-
-        //if (sNetworkConnectedTimeDuration > lastOnceDuration) {
-            PrefsUtils.getInstance().putLong(ACCUMULATED_DURATION, sNetworkConnectedTimeDuration + offsetDuration);
-            Log.d(TAG, "writeSimcardAccumulatedOnlineDuration: current accumulated duration updated = " + (sNetworkConnectedTimeDuration + offsetDuration)/1000 + " seconds");
-        //}
-        //else
-        //{
-            //Log.d(TAG, "writeSimcardAccumulatedOnlineDuration: current accumulated duration not update, still is = " + sNetworkConnectedTimeDuration/1000 + " seconds");
-        //}
+        long lastAccumulatedDuration = readSimcardAccumulatedOnlineDuration();
+        PrefsUtils.getInstance().putLong(ACCUMULATED_DURATION, lastAccumulatedDuration + offsetDuration);
+        Log.d(TAG, "writeSimcardAccumulatedOnlineDuration: current accumulated duration updated = " + (lastAccumulatedDuration + offsetDuration)/1000 + " seconds");
     }
 
     /* 清空累积联网时长 */
@@ -67,34 +56,32 @@ public class SavePrefsUtils {
         PrefsUtils.getInstance().putLong(ACCUMULATED_DURATION, 0L);
     }
 
-    @Deprecated
-    public static boolean readSimcardActivatedFromFile() {
-        return SaveFileUtils.getInstance().readElectricCardActivated().getFlag();
-    }
-
-    @Deprecated
+    @Deprecated  // 已过期, 通过文件保存, 读取写入
     public static boolean readSimcardActivated() {
         return PrefsUtils.getInstance().getBoolean(ELECTRIC_CARD_ACTIVATED_STATE, false);
     }
 
-    @Deprecated
+    @Deprecated  // 已过期, 通过文件保存, 读取写入
     public static void writeSimcardActivated(boolean activated) {
         PrefsUtils.getInstance().putBoolean(ELECTRIC_CARD_ACTIVATED_STATE, activated);
     }
 
+    @Deprecated  // 已过期, 通过文件保存, 读取写入
     public static String readSimcardDateTime() {
         return PrefsUtils.getInstance().getString(ELECTRIC_CARD_ACTIVATED_DATETIME, ELECTRIC_CARD_ACTIVATED_DEFAULT_TIME);
     }
 
-    @Deprecated
+    @Deprecated  // 已过期, 通过文件保存, 读取写入
     public static void writeSimcardDateTime(String datatime) {
         PrefsUtils.getInstance().putString(ELECTRIC_CARD_ACTIVATED_DATETIME, datatime);
     }
 
+    /* 读取每次断开网络重新联网的开始时间 */
     public static long readNetworkConnectedTime() {
         return sNetworkConnectedStartTime;
     }
 
+    /* 更新每次断开网络重新联网的开始时间 */
     public static void writeNetworkConnectedTime(long networkConnectedTime) {
         sNetworkConnectedStartTime = networkConnectedTime;
     }
@@ -105,11 +92,13 @@ public class SavePrefsUtils {
         return PrefsUtils.getInstance().getString(PROVIDER_NAME_PRESET_STATE, "");
     }
 
+    /* 读取运营商预设累计时长 */
     public static Long readProviderAccumulatedDuration()
     {
         return PrefsUtils.getInstance().getLong(PROVIDER_ACCUMULATED_PRESET_STATE, 0L);
     }
 
+    /* 读取运营商预设持续时长 */
     public static Long readProviderConsistentDuration()
     {
         return PrefsUtils.getInstance().getLong(PROVIDER_CONSISTENT_PRESET_STATE, 0L);
@@ -132,7 +121,6 @@ public class SavePrefsUtils {
         Log.d(TAG, "updateDurationFromReceiver: curentTime = " + currentTime + ", startTime = " + startTime);
         Log.d(TAG, "updateDurationFromReceiver: once online duration = " + offset / 1000 + " seconds");
 
-        //writeNetworkConnectedTime(currentTime);       // no necessary
         writeSimcardAccumulatedOnlineDuration(offset);
         writeSimcardConsistentOnlineDuration(offset);
     }
@@ -149,15 +137,15 @@ public class SavePrefsUtils {
         long currentAccumulatedDuration = readSimcardAccumulatedOnlineDuration();
         long ConsistentDuration = readSimcardConsistentOnlineDuration();
         Log.d(TAG, "updateDurationFromService: current AccumulatedDuration = " + currentAccumulatedDuration/1000 + " seconds");
-        Log.d(TAG, "updateDurationFromService: ConsistentDuration = " + ConsistentDuration/1000 + " seconds");
+        Log.d(TAG, "updateDurationFromService: current ConsistentDuration = " + ConsistentDuration/1000 + " seconds");
 
         long presetAccumulatedDuration = readProviderAccumulatedDuration();
         long presetConsistentDuration = readProviderConsistentDuration();
 
         try {
             if (presetAccumulatedDuration == 0 || presetConsistentDuration == 0) {
-                Log.d(TAG, "updateDurationFromService: preset accumulated or consistent duration is 0...................................................");
-                throw new Exception("tell me why ?..........................");
+                Log.d(TAG, "updateDurationFromService: preset accumulated or consistent duration is 0....................");
+                throw new Exception("tell me why ?.............................................................................");
             }
             else
             {
@@ -171,17 +159,17 @@ public class SavePrefsUtils {
 
         if (currentAccumulatedDuration + offset > presetAccumulatedDuration) {
             if (ConsistentDuration + offset > presetConsistentDuration) {
-                //writeNetworkConnectedTime(curentTime);   // no necessary
                 writeSimcardAccumulatedOnlineDuration(offset);
                 writeSimcardConsistentOnlineDuration(offset);
-                Log.d(TAG, "updateDurationFromService: write simcard activated flag true........................................................");
+                Log.d(TAG, "updateDurationFromService: write simcard activated flag true..................................");
                 writeSimcardActivated(true);
-                /* 将电子保卡激活标志写入文件, 不在这里写文件了, 只在读取短信成功的一个地方写 */
+                /* 将电子保卡激活标志写入文件, 此处只写入激活标志, 激活日期还是为空, 在读取短信成功的地方要重新写入, 来更新激活日期 */
                 SaveFileUtils.getInstance().writeElectricCardActivated(new ResultInfo(true));
             }
         }
     }
 
+    /* 处理清除电子保卡激活信息 */
     public static void handleClearActivatedState()
     {
         ResultInfo resultInfo = SaveFileUtils.getInstance().readElectricCardActivated();
@@ -193,25 +181,26 @@ public class SavePrefsUtils {
         /* 电子保卡没有激活 */
         if (!isSimcardActivated)
         {
-            Log.d(TAG, "handleClearActivatedState: start clearing activated flag failed Simcard not activated...........................................");
+            Log.d(TAG, "handleClearActivatedState: start clearing activated flag failed Simcard not activated...............");
         }
         /* 电子保卡已经激活, 但是没有收到运营商短信 */
         else if (TextUtils.isEmpty(dateTime))
         {
-            Log.d(TAG, "handleClearActivatedState: start clearing activated flag failed Simcard dataTime empty .........................................");
+            Log.d(TAG, "handleClearActivatedState: start clearing activated flag failed Simcard dataTime empty .............");
         }
         else
         {
-            Log.d(TAG, "handleClearActivatedState: start clearing activated flag success ...........................................");
+            Log.d(TAG, "handleClearActivatedState: start clearing activated flag success ...................................");
             /* 初始化所有变量 */
             clearActivatedState();
 
             /* 开始重新启动定时服务 */
             ElectricCardService.setServiceAlarm(ElectricCardApp.getAppContext(), true);
-            Log.d(TAG, "handleClearActivatedState: after clearing activated flag service started....................................");
+            Log.d(TAG, "handleClearActivatedState: after clearing activated flag service started............................");
         }
     }
 
+    /* 清空电子保卡激活状态有关的数据 */
     public static void clearActivatedState()
     {
         /* 开始的联网时间清空 */

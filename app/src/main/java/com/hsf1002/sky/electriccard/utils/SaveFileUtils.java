@@ -83,10 +83,11 @@ public class SaveFileUtils {
         }
     }
 
-    public ResultInfo readElectricCardActivated( )
+    /* 如果文件已经存在, 说明激活标志已写入, 但是激活日期可能为空 */
+    public ResultInfo readElectricCardActivated()
     {
         File file = new File(FILE_PATH/*, FILE_NAME*/);
-        ResultInfo resultInfo = null;
+        ResultInfo resultInfo = new ResultInfo(false);
 
         Log.d(TAG, "readElectricCardActivated: read file start ..............................");
 
@@ -102,8 +103,7 @@ public class SaveFileUtils {
 
                 //while (line != null) {
                     //content.append(line);
-                Log.d(TAG, "readElectricCardActivated: line = " + line);
-                resultInfo = new ResultInfo();
+                Log.d(TAG, "readElectricCardActivated: line1 = " + line);
 
                 if (line.contains("false"))
                 {
@@ -117,9 +117,9 @@ public class SaveFileUtils {
                 {
                     resultInfo.setFlag(false);
                 }
-                Log.d(TAG, "readElectricCardActivated: line = " + line);
-                    //line = bufferedReader.readLine();
-                resultInfo.setTime(bufferedReader.readLine());
+                line = bufferedReader.readLine();
+                Log.d(TAG, "readElectricCardActivated: line2 = " + line);
+                resultInfo.setTime(line);
                 //}
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

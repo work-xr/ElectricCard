@@ -2,6 +2,7 @@ package com.hsf1002.sky.electriccard.utils;
 
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.hsf1002.sky.electriccard.application.ElectricCardApp;
 
@@ -56,10 +57,14 @@ public class PrefsUtils {
         return sharedPreferences.getLong(key, value);
     }
 
+    /* 持续时长和累积时长要同时写入, 用apply会出现偶尔无法写入的情况 */
     public void putLong(String key, long value)
     {
+        boolean result;
         editor.putLong(key, value);
-        editor.apply();
+        //editor.apply();
+        result = editor.commit();
+        Log.d("electriccard", "putLong result = " + result);
     }
 
     public Boolean getBoolean(String key, Boolean value)

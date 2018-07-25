@@ -12,9 +12,9 @@ public class Constant {
     public static final int SERVICE_STARTUP_INTERVAL = 60 * PHONE_DRATION_UNIT;
 
     /* GSM手机持续开机SIM卡联网时长 */
-    public static final int GSM_PHONE_CONSISTENT_DURATION = 1 * 5* 60 * PHONE_DRATION_UNIT;
+    public static final int GSM_PHONE_CONSISTENT_DURATION = 1 * 60* 60 * PHONE_DRATION_UNIT;
     /* GSM手机累积开机SIM卡联网时长 */
-    public static final int GSM_PHONE_ACCUMULATED_DURATION = 1 * 5 * 60 * PHONE_DRATION_UNIT;
+    public static final int GSM_PHONE_ACCUMULATED_DURATION = 1 * 60 * 60 * PHONE_DRATION_UNIT;
     /* 电信手机持续开机SIM卡联网时长 */
     public static final int TELECOM_PHONE_CONSISTENT_DURATION = 6 * 60 * 60 * PHONE_DRATION_UNIT;
     /* 电信手机累积开机SIM卡联网时长 */
@@ -22,6 +22,7 @@ public class Constant {
     public static final String CONSISTENT_DURATION = "consistent_duration";
     public static final String ACCUMULATED_DURATION = "accumulated_duration";
 
+    /* 运营商名称标识 */
     public static final String CHINA_MOBILE_NAME = "CMCC";
     public static final String CHINA_UNICOM_NAME = "UNICOM";
     public static final String CHINA_TELECOM_NAME = "TELECOM";
@@ -41,9 +42,5 @@ public class Constant {
     public static final String CHINA_TELECOM_SMS_CENTER_PREFIX = "10000";
     public static final String CHINA_TELECOM_SMS_CENTER_2_PREFIX = "10001";
 
-    public static final String SHARED_PREFERENCE_NAME = "electriccard";
-
     public static final String ELECTRIC_CARD_ACTIVATED_DEFAULT_TIME = "";//"20180101010101";
-
-
 }
